@@ -59,10 +59,10 @@ export default function Home() {
     <main className="bg-primary min-h-screen">
       <Header />
 
-      <div className='my-20'>
+      <div className=''>
         <ProjectCarousel 
           projects={projects}
-          visibleCount={3}
+          visibleCount={4}
           autoPlayInterval={5000}
         />
       </div>
