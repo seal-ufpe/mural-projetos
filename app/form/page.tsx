@@ -53,3 +53,45 @@ export default function ProjectForm() {
     setSelectedImage(file);
     setImagePreview(URL.createObjectURL(file));
   };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const validatedData = projectSchema.parse(formData);
+
+      const data = new FormData();
+      data.append('title', validatedData.title);
+      data.append('description', validatedData.description);
+      data.append('author', validatedData.author);
+      data.append('githubUrl', validatedData.githubUrl);
+      data.append('status', validatedData.status);
+      if (selectedImage) {
+        data.append('image', selectedImage);
+      }
+
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        body: data,
+      });
+      
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao enviar o formulário');
+      };
+
+      router.push('/');
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.error('Validation errors:', error.issues);
+      } else {
+        console.error('Submission error:', error);
+      }
+    }
+  };
