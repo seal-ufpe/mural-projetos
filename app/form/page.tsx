@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
+import Image from "next/image";
 import {z} from "zod";
 import Header from '../components/Header';
 import {fonts, colors} from '../utils/theme';
@@ -33,8 +34,6 @@ const projectSchema = z.object({
       message: 'Tipos de imagem aceitos: JPEG, JPG, PNG, WEBP',
     }),
 });
-
-type ProjectData = z.infer<typeof projectSchema>;
 
 export default function ProjectForm() {
   const router = useRouter();
@@ -231,10 +230,12 @@ export default function ProjectForm() {
             >
               {imagePreview ? (
                 <div className="space-y-4">
-                  <img
+                  <Image
                     src={imagePreview}
                     alt="Preview"
-                    className="max-h-64 mx-auto rounded-lg object-cover"
+                    width={400}
+                    height={300}
+                    className="max-h-64 w-auto mx-auto rounded-lg object-cover"
                   />
                   <button
                     type="button"
