@@ -33,3 +33,23 @@ const projectSchema = z.object( {
 });
 
 type ProjectData = z.infer<typeof projectSchema>;
+
+export default function ProjectForm() {
+  const router = useRouter();
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>();
+  const [formData, setFormData] = useState<ProjectData>({
+    title: '',
+    description: '',
+    author: '',
+    githubUrl: '',
+    status: 'EM DESENVOLVIMENTO',
+  });
+  
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSelectedImage(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
