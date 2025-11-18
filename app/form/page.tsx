@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import {z} from "zod";
 import Header from '../components/Header';
 import {fonts, colors} from '../utils/theme';
-import { ArrowLeft, Upload, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Upload,Image as ImageIcon } from 'lucide-react';
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg',  'image/png', 'image/webp'];
@@ -38,6 +38,7 @@ export default function ProjectForm() {
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<ProjectData>({
     title: '',
     description: '',
@@ -61,6 +62,8 @@ export default function ProjectForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    setIsSubmitting(true);
     
     try {
       const validatedData = projectSchema.parse(formData);
@@ -93,6 +96,8 @@ export default function ProjectForm() {
       } else {
         console.error('Submission error:', error);
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -240,8 +245,35 @@ export default function ProjectForm() {
             className="hidden"
           />
           </div>
-
           
+          {/* Botões */}
+          <div className="flex gap-4 pt-4">
+            <button
+              type="button"
+              onClick={() => router.push('/')}
+              className="flex-1 bg-[#2A3F52] text-white border border-white/30 rounded-lg px-6 py-3 font-medium hover:bg-opacity-80 transition-all"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1 bg-blue-600 text-white rounded-lg px-6 py-3 font-medium hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? (
+                <>
+                  <Upload className="w-5 h-5 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-5 h-5" />
+                  Enviar Projeto
+                </>
+              )}
+            </button>
+          </div>
 
           </form>          
         </div>
