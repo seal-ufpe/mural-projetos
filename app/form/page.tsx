@@ -10,6 +10,7 @@ import { ArrowLeft, Upload, Image as ImageIcon } from 'lucide-react';
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg',  'image/png', 'image/webp'];
+const DEFAULT_IMAGE_URL = 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=60';
 
 const projectSchema = z.object({
   title: z.string()
@@ -55,17 +56,16 @@ export default function ProjectForm() {
 
     setSelectedImage(file);
     setImagePreview(URL.createObjectURL(file));
-    //Limpa erro de imagem quando seleciona uma nova
+    
     if (errors.image) {
       setErrors((prev) => ({ ...prev, image: undefined }));
     }
-
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    //Limpa erro do campo quando usuário digita
+    
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
@@ -73,7 +73,6 @@ export default function ProjectForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setErrors({});
     setIsSubmitting(true);
     
@@ -84,37 +83,44 @@ export default function ProjectForm() {
         image: selectedImage || undefined,
       });
 
-      // Fazer upload da imagem para Cloudinary
+      // Criar FormData para enviar arquivo + dados
+      const submitData = new FormData();
+      submitData.append('title', validatedData.title);
+      submitData.append('description', validatedData.description);
+      submitData.append('author', validatedData.author);
+      submitData.append('githubUrl', validatedData.githubUrl);
+      submitData.append('status', validatedData.status);
+      
+      // Se tiver imagem, adiciona ao FormData. Senão, baixa imagem padrão e adiciona
+      if (selectedImage) {
+        submitData.append('image', selectedImage);
+      } else {
+        const response = await fetch(DEFAULT_IMAGE_URL);
+        const blob = await response.blob();
+        const defaultImageFile = new File([blob], 'default-image.jpg', { type: 'image/jpeg' });
+        submitData.append('image', defaultImageFile);
+      }
 
-      // Enviar dados para a API
-      const response = await fetch('/api', {
+      // Enviar para a API
+      const apiResponse = await fetch('/api', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: validatedData.title,
-          description: validatedData.description,
-          author: validatedData.author,
-          githubUrl: validatedData.githubUrl,
-          status: validatedData.status,
-          imageUrl: imagePreview || 'https://via.placeholder.com/800x600', //temporário
-        }),
+        body: submitData,
       });
 
-      const result = await response.json();
+      const result = await apiResponse.json();
 
-      if (!response.ok || !result.success) {
+      if (!apiResponse.ok || !result.success) {
         throw new Error(result.error || result.message || 'Erro ao enviar o formulário');
       }
 
-      //Redirecionar para home após sucesso
+      // Redirecionar para home após sucesso
       router.push('/');
     } catch (error) {
       if (error instanceof z.ZodError) {
         setErrors(error.flatten((issue) => issue.message).fieldErrors);
       } else {
         console.error('Erro ao enviar:', error);
+        alert(error instanceof Error ? error.message : 'Erro ao enviar projeto');
       }
     } finally {
       setIsSubmitting(false);
@@ -213,7 +219,7 @@ export default function ProjectForm() {
               className={inputClass}
             >
               <option className="text-black" value="EM DESENVOLVIMENTO">Em Desenvolvimento</option>
-              <option className="text-black"  value="FINALIZADO">Finalizado</option>
+              <option className="text-black" value="FINALIZADO">Finalizado</option>
             </select>
           </div>
 
