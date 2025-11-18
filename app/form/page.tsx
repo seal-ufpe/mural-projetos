@@ -212,8 +212,8 @@ export default function ProjectForm() {
               onChange={handleChange}
               className={inputClass}
             >
-              <option value="EM DESENVOLVIMENTO">Em Desenvolvimento</option>
-              <option value="FINALIZADO">Finalizado</option>
+              <option className="text-black" value="EM DESENVOLVIMENTO">Em Desenvolvimento</option>
+              <option className="text-black"  value="FINALIZADO">Finalizado</option>
             </select>
           </div>
 
