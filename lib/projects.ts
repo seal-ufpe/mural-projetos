@@ -12,6 +12,7 @@ export interface Project {
   githubUrl: string;
   status: ProjectStatus;
   imageUrl: string;
+  aprovado: boolean;
   createdAt: string;
   updatedAt?: string;
 }
@@ -25,11 +26,11 @@ async function getProjectsCollection(): Promise<Collection<Project>> {
 }
 
 /**
- * Lista todos os projetos
+ * Lista todos os projetos aprovados
  */
 export async function listProjects(): Promise<Project[]> {
   const collection = await getProjectsCollection();
-  const projects = await collection.find({}).toArray();
+  const projects = await collection.find({ aprovado: true }).toArray();
   
   // Converte _id do MongoDB para string no campo id
   return projects.map(project => ({
@@ -56,11 +57,12 @@ export async function getProjectById(id: string): Promise<Project | null> {
 /**
  * Cria um novo projeto
  */
-export async function createProject(data: Omit<Project, '_id' | 'id' | 'createdAt'>): Promise<Project> {
+export async function createProject(data: Omit<Project, '_id' | 'id' | 'createdAt' | 'aprovado'>): Promise<Project> {
   const collection = await getProjectsCollection();
   
   const newProject: Omit<Project, '_id' | 'id'> = {
     ...data,
+    aprovado: false,
     createdAt: new Date().toISOString(),
   };
   
@@ -125,7 +127,9 @@ export async function searchProjects(query: {
 }): Promise<Project[]> {
   const collection = await getProjectsCollection();
   
-  const filter: any = {};
+  const filter: any = {
+    aprovado: true // Apenas projetos aprovados
+  };
   
   if (query.author) {
     filter.author = { $regex: query.author, $options: 'i' };
