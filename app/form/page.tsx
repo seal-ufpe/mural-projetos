@@ -3,13 +3,13 @@
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import Image from "next/image";
-import {z} from "zod";
+import { z } from "zod";
 import Header from '../components/Header';
-import {fonts, colors} from '../utils/theme';
+import { fonts, colors } from '../utils/theme';
 import { ArrowLeft, Upload, Image as ImageIcon } from 'lucide-react';
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg',  'image/png', 'image/webp'];
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const DEFAULT_IMAGE_URL = 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=60';
 
 const projectSchema = z.object({
@@ -22,10 +22,7 @@ const projectSchema = z.object({
     .min(1, 'Autor é obrigatório'),
   githubUrl: z
     .string()
-    .url({message: 'URL inválida'})
-    .refine((url) => url.includes('github.com'), { 
-      message: 'A URL deve ser do GitHub' 
-    }),
+    .url({ message: 'URL inválida' }),
   status: z.enum(['FINALIZADO', 'EM DESENVOLVIMENTO']),
   image: z.instanceof(File).optional()
     .refine((file) => !file || file.size <= MAX_IMAGE_SIZE, {
@@ -46,17 +43,17 @@ export default function ProjectForm() {
     title: '',
     description: '',
     author: '',
-    githubUrl: '',
+    githubUrl: 'https://',
     status: 'EM DESENVOLVIMENTO' as 'FINALIZADO' | 'EM DESENVOLVIMENTO',
   });
-  
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setSelectedImage(file);
     setImagePreview(URL.createObjectURL(file));
-    
+
     if (errors.image) {
       setErrors((prev) => ({ ...prev, image: undefined }));
     }
@@ -65,7 +62,7 @@ export default function ProjectForm() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    
+
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
@@ -75,7 +72,7 @@ export default function ProjectForm() {
     e.preventDefault();
     setErrors({});
     setIsSubmitting(true);
-    
+
     try {
       // Validar dados com Zod
       const validatedData = projectSchema.parse({
@@ -90,7 +87,7 @@ export default function ProjectForm() {
       submitData.append('author', validatedData.author);
       submitData.append('githubUrl', validatedData.githubUrl);
       submitData.append('status', validatedData.status);
-      
+
       // Se tiver imagem, adiciona ao FormData. Senão, baixa imagem padrão e adiciona
       if (selectedImage) {
         submitData.append('image', selectedImage);
@@ -132,12 +129,6 @@ export default function ProjectForm() {
   return (
     <div className={`${colors.background.primary} min-h-screen px-6 py-8 md:py-12 lg:px-20`}>
       <Header hideQrCode={true}>
-        <button
-          onClick={() => router.push("/")}          
-          className={`mr-4 ${colors.text.subtle} hover:${colors.text.white} transition cursor-pointer`}
-        >
-          <ArrowLeft className="w-8 h-8" />
-        </button>
       </Header>
 
       {/* Formulário */}
@@ -158,20 +149,26 @@ export default function ProjectForm() {
             />
             {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title[0]}</p>}
           </div>
-          
+
           {/* Descrição do Projeto */}
           <div>
             <label className={`block ${colors.text.white} mb-2`}>
-              Descrição <span className="text-red-500">*</span>
+              Descrição (max. 60 caracteres)<span className="text-red-500">*</span>
             </label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
+              maxLength={60}
               placeholder="Descreva seu projeto em poucas palavras"
               rows={4}
               className={inputClass}
             />
+            <div className="flex justify-end">
+              <span className={`${colors.text.subtle} text-xs mt-1`}>
+                {formData.description.length}/60
+              </span>
+            </div>
             {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description[0]}</p>}
           </div>
 
@@ -203,6 +200,7 @@ export default function ProjectForm() {
               onChange={handleChange}
               placeholder="Ex: https://github.com/usuario/projeto"
               className={inputClass}
+
             />
             {errors.githubUrl && <p className="text-red-500 text-sm mt-1">{errors.githubUrl[0]}</p>}
           </div>
@@ -226,13 +224,12 @@ export default function ProjectForm() {
           {/* Imagem do Projeto */}
           <div>
             <label className={`block ${colors.text.white} mb-2`}>
-              Imagem do Projeto (máx. 5MB)
+              Imagem do Projeto (Opcional), (máx. 5MB)
             </label>
             <div
               onClick={() => document.getElementById('imageInput')?.click()}
-              className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                errors.image ? 'border-red-500' : imagePreview ? 'border-blue-400' : 'border-white/30 hover:border-white/50'
-              }`}
+              className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${errors.image ? 'border-red-500' : imagePreview ? 'border-blue-400' : 'border-white/30 hover:border-white/50'
+                }`}
             >
               {imagePreview ? (
                 <div className="space-y-4">
@@ -258,7 +255,7 @@ export default function ProjectForm() {
               ) : (
                 <div className="space-y-2">
                   <div className="w-12 h-12 text-blue-400 mx-auto">
-                    <ImageIcon className="w-12 h-12"/>
+                    <ImageIcon className="w-12 h-12" />
                   </div>
                   <p className={`${colors.text.white} text-sm ${fonts.body}`}>
                     Clique para enviar uma imagem
@@ -278,16 +275,9 @@ export default function ProjectForm() {
             />
             {errors.image && <p className="text-red-500 text-sm mt-1">{errors.image[0]}</p>}
           </div>
-          
+
           {/* Botões */}
           <div className="flex gap-4 pt-4">
-            <button
-              type="button"
-              onClick={() => router.push('/')}
-              className="flex-1 bg-[#2A3F52] text-white border border-white/30 rounded-lg px-6 py-3 font-medium hover:bg-opacity-80 transition-all"
-            >
-              Cancelar
-            </button>
 
             <button
               type="submit"
@@ -307,7 +297,7 @@ export default function ProjectForm() {
               )}
             </button>
           </div>
-        </form>          
+        </form>
       </div>
     </div>
   );
