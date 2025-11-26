@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { 
-  listProjects, 
-  createProject, 
+import {
+  listProjects,
+  createProject,
   deleteProject,
   searchProjects,
-  type ProjectStatus 
+  type ProjectStatus
 } from '@/lib/projects';
 import { uploadImage } from '@/lib/cloudinary';
 
@@ -20,16 +20,16 @@ import { uploadImage } from '@/lib/cloudinary';
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    
+
     // Extrair parâmetros de busca
     const author = searchParams.get('author');
     const title = searchParams.get('title');
     const status = searchParams.get('status') as ProjectStatus | null;
     const limit = searchParams.get('limit');
     const skip = searchParams.get('skip');
-    
+
     let projects;
-    
+
     // Se houver filtros, usa searchProjects, senão lista todos
     if (author || title || status || limit || skip) {
       projects = await searchProjects({
@@ -42,19 +42,19 @@ export async function GET(request: Request) {
     } else {
       projects = await listProjects();
     }
-    
+
     return NextResponse.json(
-      { 
+      {
         success: true,
         data: projects,
         total: projects.length
-      }, 
+      },
       { status: 200 }
     );
   } catch (error) {
     console.error('Erro ao listar projetos:', error);
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: 'Erro ao listar projetos',
         message: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
   try {
     // Receber FormData ao invés de JSON
     const formData = await request.formData();
-    
+
     // Extrair campos do FormData
     const title = formData.get('title') as string;
     const description = formData.get('description') as string;
@@ -86,28 +86,27 @@ export async function POST(request: Request) {
     const githubUrl = formData.get('githubUrl') as string;
     const status = formData.get('status') as ProjectStatus;
     const imageFile = formData.get('image') as File | null;
-    
+
     // Validação de campos obrigatórios
-    if (!title || !description || !author || !githubUrl || !status || !imageFile) {
+    if (!title || !description || !author || !githubUrl || !status) {
       const missingFields = [];
       if (!title) missingFields.push('title');
       if (!description) missingFields.push('description');
       if (!author) missingFields.push('author');
       if (!githubUrl) missingFields.push('githubUrl');
       if (!status) missingFields.push('status');
-      if (!imageFile) missingFields.push('image');
-      
+
       return NextResponse.json(
         {
           success: false,
           error: 'Campos obrigatórios faltando',
-          required: ['title', 'description', 'author', 'githubUrl', 'status', 'image'],
+          required: ['title', 'description', 'author', 'githubUrl', 'status'],
           missing: missingFields
         },
         { status: 400 }
       );
     }
-    
+
     // Validação do campo status
     if (status !== 'FINALIZADO' && status !== 'EM DESENVOLVIMENTO') {
       return NextResponse.json(
@@ -119,7 +118,7 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    
+
     // Validação básica de URL do GitHub
     try {
       new URL(githubUrl);
@@ -133,48 +132,51 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    
-    // Validação do tipo de arquivo
-    if (!imageFile.type.startsWith('image/')) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Tipo de arquivo inválido',
-          message: 'O arquivo deve ser uma imagem'
-        },
-        { status: 400 }
-      );
+
+    let imageUrl: string | undefined;
+
+    if (imageFile && imageFile.size > 0) {
+      // Validação do tipo de arquivo
+      if (!imageFile.type.startsWith('image/')) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Tipo de arquivo inválido',
+            message: 'O arquivo deve ser uma imagem'
+          },
+          { status: 400 }
+        );
+      }
+
+      // Validação do tamanho do arquivo (máximo 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (imageFile.size > maxSize) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Arquivo muito grande',
+            message: 'O arquivo deve ter no máximo 5MB'
+          },
+          { status: 400 }
+        );
+      }
+
+      // Upload da imagem para o Cloudinary
+      try {
+        imageUrl = await uploadImage(imageFile);
+      } catch (error) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Erro ao fazer upload da imagem',
+            message: error instanceof Error ? error.message : 'Erro desconhecido'
+          },
+          { status: 500 }
+        );
+      }
     }
-    
-    // Validação do tamanho do arquivo (máximo 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (imageFile.size > maxSize) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Arquivo muito grande',
-          message: 'O arquivo deve ter no máximo 5MB'
-        },
-        { status: 400 }
-      );
-    }
-    
-    // Upload da imagem para o Cloudinary
-    let imageUrl: string;
-    try {
-      imageUrl = await uploadImage(imageFile);
-    } catch (error) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Erro ao fazer upload da imagem',
-          message: error instanceof Error ? error.message : 'Erro desconhecido'
-        },
-        { status: 500 }
-      );
-    }
-    
-    // Criar projeto no MongoDB com a URL do Cloudinary
+
+    // Criar projeto no MongoDB com a URL do Cloudinary (se houver)
     const newProject = await createProject({
       title,
       description,
@@ -183,7 +185,7 @@ export async function POST(request: Request) {
       status,
       imageUrl,
     });
-    
+
     return NextResponse.json(
       {
         success: true,
@@ -214,7 +216,7 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
+
     if (!id) {
       return NextResponse.json(
         {
@@ -224,7 +226,7 @@ export async function DELETE(request: Request) {
         { status: 400 }
       );
     }
-    
+
     // Validar formato do ObjectId (24 caracteres hexadecimais)
     if (!/^[0-9a-fA-F]{24}$/.test(id)) {
       return NextResponse.json(
@@ -236,10 +238,10 @@ export async function DELETE(request: Request) {
         { status: 400 }
       );
     }
-    
+
     // Deletar projeto do MongoDB
     const deleted = await deleteProject(id);
-    
+
     if (!deleted) {
       return NextResponse.json(
         {
@@ -249,7 +251,7 @@ export async function DELETE(request: Request) {
         { status: 404 }
       );
     }
-    
+
     return NextResponse.json(
       {
         success: true,

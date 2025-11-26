@@ -21,26 +21,28 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
   return (
     <div className={`relative ${colors.background.card} ${colors.border.default} ${colors.border.hover} rounded-lg overflow-hidden transition-all duration-300 group h-full flex flex-col`}>
       {/* Status Badge */}
-      <div 
-         
+      <div
+
         className={`absolute top-3 right-3 ${fonts.title} text-xs tracking-wider px-3 py-1 rounded z-10 ${statusInfo.className}`}
       >
         {statusInfo.label}
       </div>
 
       {/* Project Image */}
-      <div className={`relative w-full h-64 overflow-hidden ${colors.background.secondary}`}>
-        <img 
-          src={project.imageUrl} 
-          alt={project.title}
-          className="w-full h-full object-cover"
-        />
-      </div>
+      {project.imageUrl && (
+        <div className={`relative w-full h-64 overflow-hidden ${colors.background.secondary}`}>
+          <img
+            src={project.imageUrl}
+            alt={project.title}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
 
       {/* Content */}
       <div className={`p-6 flex-1 flex flex-col ${colors.background.card}`}>
         {/* Project Title */}
-        <h3 className={`${fonts.title} text-3xl md:text-4xl mb-3 ${colors.text.white} tracking-wide uppercase`}>
+        <h3 className={`${fonts.title} text-3xl md:text-4xl mb-3 ${colors.text.white} tracking-wide uppercase ${!project.imageUrl ? 'mt-12' : ''}`}>
           {project.title}
         </h3>
 
@@ -55,7 +57,7 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
             <p className={`${fonts.body} text-xs text-gray-400 mb-2`}>
               Por <span className={`${colors.text.gray} font-medium`}>{project.author}</span>
             </p>
-            <a 
+            <a
               href={project.githubUrl}
               target="_blank"
               rel="noopener noreferrer"
@@ -67,8 +69,8 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
 
           {/* QR Code */}
           <div className="bg-white p-2 rounded shrink-0 group-hover:scale-105 transition-transform">
-            <QRCodeSVG 
-              value={project.githubUrl} 
+            <QRCodeSVG
+              value={project.githubUrl}
               size={100}
               level="M"
               includeMargin={false}

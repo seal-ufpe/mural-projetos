@@ -90,13 +90,38 @@ export default function ProjectForm() {
       submitData.append('status', validatedData.status);
 
       // Se tiver imagem, adiciona ao FormData. Senão, baixa imagem padrão e adiciona
+      // Se tiver imagem, adiciona ao FormData. Senão, tenta pegar do GitHub
       if (selectedImage) {
         submitData.append('image', selectedImage);
       } else {
-        const response = await fetch(DEFAULT_IMAGE_URL);
-        const blob = await response.blob();
-        const defaultImageFile = new File([blob], 'default-image.jpg', { type: 'image/jpeg' });
-        submitData.append('image', defaultImageFile);
+        // Tentar extrair informações do repositório GitHub
+        try {
+          const urlObj = new URL(validatedData.githubUrl);
+          if (urlObj.hostname === 'github.com') {
+            const parts = urlObj.pathname.split('/').filter(Boolean);
+            if (parts.length >= 2) {
+              const owner = parts[0];
+              const repo = parts[1];
+              // Usar formato padrão do GitHub Open Graph
+              const imageUrlToFetch = `https://opengraph.githubassets.com/1/${owner}/${repo}`;
+
+              const response = await fetch(imageUrlToFetch);
+
+              if (response.ok) {
+                const blob = await response.blob();
+                // Determinar tipo baseado no blob ou fallback
+                const type = blob.type || 'image/png';
+                const extension = type.split('/')[1] || 'png';
+                const defaultImageFile = new File([blob], `project-image.${extension}`, { type });
+                submitData.append('image', defaultImageFile);
+              } else {
+                console.warn('Falha ao obter imagem do GitHub');
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Erro ao processar URL do GitHub:', e);
+        }
       }
 
       // Enviar para a API

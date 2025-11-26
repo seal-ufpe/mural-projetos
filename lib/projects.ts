@@ -11,7 +11,7 @@ export interface Project {
   author: string;
   githubUrl: string;
   status: ProjectStatus;
-  imageUrl: string;
+  imageUrl?: string;
   aprovado: boolean;
   createdAt: string;
   updatedAt?: string;
@@ -31,7 +31,7 @@ async function getProjectsCollection(): Promise<Collection<Project>> {
 export async function listProjects(): Promise<Project[]> {
   const collection = await getProjectsCollection();
   const projects = await collection.find({ aprovado: true }).toArray();
-  
+
   // Converte _id do MongoDB para string no campo id
   return projects.map(project => ({
     ...project,
@@ -45,9 +45,9 @@ export async function listProjects(): Promise<Project[]> {
 export async function getProjectById(id: string): Promise<Project | null> {
   const collection = await getProjectsCollection();
   const project = await collection.findOne({ _id: new ObjectId(id) });
-  
+
   if (!project) return null;
-  
+
   return {
     ...project,
     id: project._id?.toString(),
@@ -59,15 +59,15 @@ export async function getProjectById(id: string): Promise<Project | null> {
  */
 export async function createProject(data: Omit<Project, '_id' | 'id' | 'createdAt' | 'aprovado'>): Promise<Project> {
   const collection = await getProjectsCollection();
-  
+
   const newProject: Omit<Project, '_id' | 'id'> = {
     ...data,
     aprovado: false,
     createdAt: new Date().toISOString(),
   };
-  
+
   const result = await collection.insertOne(newProject as Project);
-  
+
   return {
     ...newProject,
     id: result.insertedId.toString(),
@@ -80,25 +80,25 @@ export async function createProject(data: Omit<Project, '_id' | 'id' | 'createdA
  */
 export async function updateProject(id: string, data: Partial<Project>): Promise<Project | null> {
   const collection = await getProjectsCollection();
-  
+
   const updateData = {
     ...data,
     updatedAt: new Date().toISOString(),
   };
-  
+
   // Remove campos que não devem ser atualizados
   delete updateData._id;
   delete updateData.id;
   delete (updateData as any).createdAt;
-  
+
   const result = await collection.findOneAndUpdate(
     { _id: new ObjectId(id) },
     { $set: updateData },
     { returnDocument: 'after' }
   );
-  
+
   if (!result) return null;
-  
+
   return {
     ...result,
     id: result._id?.toString(),
@@ -111,7 +111,7 @@ export async function updateProject(id: string, data: Partial<Project>): Promise
 export async function deleteProject(id: string): Promise<boolean> {
   const collection = await getProjectsCollection();
   const result = await collection.deleteOne({ _id: new ObjectId(id) });
-  
+
   return result.deletedCount > 0;
 }
 
@@ -126,30 +126,30 @@ export async function searchProjects(query: {
   skip?: number;
 }): Promise<Project[]> {
   const collection = await getProjectsCollection();
-  
+
   const filter: any = {
     aprovado: true // Apenas projetos aprovados
   };
-  
+
   if (query.author) {
     filter.author = { $regex: query.author, $options: 'i' };
   }
-  
+
   if (query.title) {
     filter.title = { $regex: query.title, $options: 'i' };
   }
-  
+
   if (query.status) {
     filter.status = query.status;
   }
-  
+
   const projects = await collection
     .find(filter)
     .limit(query.limit || 50)
     .skip(query.skip || 0)
     .sort({ createdAt: -1 })
     .toArray();
-  
+
   return projects.map(project => ({
     ...project,
     id: project._id?.toString(),
