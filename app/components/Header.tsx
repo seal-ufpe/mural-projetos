@@ -9,12 +9,7 @@ import { fonts, colors } from '../utils/theme';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function Header({ hideQrCode = false, children }: { hideQrCode?: boolean, children?: React.ReactNode }) {
-    const [origin, setOrigin] = useState('');
-
-    useEffect(() => {
-        setOrigin(window.location.origin);
-    }, []);
-
+    console.log("Subiu");    
     return (
         <header className={`${colors.background.primary}`}>
             <div className='max-w-7xl mx-auto px-8 py-8 flex items-center justify-between'>
@@ -39,7 +34,7 @@ export default function Header({ hideQrCode = false, children }: { hideQrCode?: 
                     <div className={`${colors.background.secondary} ${colors.border.default} rounded-xl p-4 text-center`}>
                         <div className='bg-white w-32 h-32 flex items-center justify-center mb-2 rounded'>
                             <Link href="/form" aria-label="Ir para formulário" className='block'>
-                                <QRCodeSVG level={'H'} value={`${origin}/form`} />
+                                <QRCodeSVG level={'H'} value={`https://mural-projetos.vercel.app/form`} />
                             </Link>
                         </div>
                         <p className={`${colors.text.gray} text-sm font-medium ${fonts.body}`}>
